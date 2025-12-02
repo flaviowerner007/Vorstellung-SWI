@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Futuristische Journey – Flavio Werner</title>
+
+    <!-- Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet"
+    />
+
+    <!-- GSAP + ScrollTrigger -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+    <style>
+        /* RESET */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        body {
+            background: #02030a;
+            font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont,
+                "Segoe UI", sans-serif;
+            color: #e7fbff;
+            overflow-x: hidden;
+        }
+
+        /* CANVAS-BACKGROUND */
+        #nebula,
+        #photons {
+            position: fixed;
+            inset: 0;
+            z-index: -20;
+        }
+
+        /* GLAS-LAYER ÜBER DEM BACKGROUND
+           sorgt für edleren, “HUD“-artigen Look */
+        .glass-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(
+                    circle at 20% 0%,
+                    rgba(0, 255, 255, 0.06),
+                    transparent 55%
+                ),
+                radial-gradient(
+                    circle at 80% 100%,
+                    rgba(138, 43, 226, 0.12),
+                    transparent 60%
+                );
+            mix-blend-mode: screen;
+            pointer-events: none;
+            z-index: -10;
+        }
+
+        /* Scroll Button */
+        .scroll-down {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            width: 56px;
+            height: 56px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            background: radial-gradient(
+                    circle at 30% 0,
+                    rgba(0, 255, 255, 0.28),
+                    transparent 55%
+                ),
+                rgba(3, 16, 28, 0.86);
+            border: 1px solid rgba(0, 255, 255, 0.55);
+            box-shadow: 0 0 18px rgba(0, 255, 255, 0.5),
+                0 0 45px rgba(0, 255, 255, 0.28);
+            z-index: 120;
+            overflow: hidden;
+        }
+
+        .scroll-down::before {
+            content: "";
+            position: absolute;
+            inset: -40%;
+            background: conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                rgba(0, 255, 255, 0.7) 90deg,
+                transparent 180deg,
+                rgba(0, 255, 255, 0.7) 270deg,
+                transparent 360deg
+            );
+            opacity: 0.35;
+            animation: spinRing 5s linear infinite;
+        }
+
+        .scroll-down span {
+            position: relative;
+            font-size: 22px;
+            color: #e7fbff;
+            text-shadow: 0 0 8px #00faff;
+            animation: bounceArrow 1.6s ease-in-out infinite;
+        }
+
+        .scroll-down:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 0 24px rgba(0, 255, 255, 0.7);
+        }
+
+        @keyframes spinRing {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes bounceArrow {
+            0% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(5px);
+            }
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        /* CONTENT-CONTAINER */
+        .stations {
+            width: min(900px, 92vw);
+            margin: 0 auto;
+            padding-top: 120px;
+            padding-bottom: 120px;
+            position: relative;
+        }
+
+        /* VERTIKALE “ENERGY SPINE” NEBEN DEM CONTENT */
+        .spine {
+            position: fixed;
+            left: max(20px, 4vw);
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 60vh;
+            background: linear-gradient(
+                to bottom,
+                rgba(0, 255, 255, 0),
+                rgba(0, 255, 255, 0.55),
+                rgba(173, 216, 230, 0)
+            );
+            box-shadow: 0 0 18px rgba(0, 255, 255, 0.65);
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .spine::before {
+            content: "";
+            position: absolute;
+            left: -8px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: radial-gradient(
+                circle,
+                rgba(0, 255, 255, 0.9),
+                transparent 65%
+            );
+            animation: spineNode 4s ease-in-out infinite;
+        }
+
+        @keyframes spineNode {
+            0% {
+                top: 0%;
+            }
+            50% {
+                top: 80%;
+            }
+            100% {
+                top: 0%;
+            }
+        }
+
+        /* STATIONEN */
+        .station {
+            min-height: 100vh;
+            padding: 80px 0;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.9s ease-out, transform 0.9s ease-out,
+                filter 0.9s ease-out;
+            position: relative;
+        }
+
+        /* “HOLOGRAFISCHE CARD” UM DEN TEXT */
+        .station-inner {
+            position: relative;
+            padding: 32px 30px 28px 30px;
+            border-radius: 20px;
+            background: radial-gradient(
+                    circle at 0 0,
+                    rgba(0, 255, 255, 0.18),
+                    transparent 55%
+                ),
+                rgba(2, 12, 24, 0.82);
+            border: 1px solid rgba(0, 255, 255, 0.22);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(18px);
+            overflow: hidden;
+        }
+
+        .station-inner::before {
+            content: "";
+            position: absolute;
+            inset: -40%;
+            background: repeating-linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.03),
+                rgba(255, 255, 255, 0.03) 1px,
+                transparent 3px,
+                transparent 4px
+            );
+            mix-blend-mode: soft-light;
+            opacity: 0;
+            transition: opacity 0.8s ease-out;
+        }
+
+        /* LIGHT RIM */
+        .station-inner::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            border: 1px solid rgba(0, 255, 255, 0.32);
+            opacity: 0;
+            filter: blur(3px);
+            pointer-events: none;
+            transition: opacity 0.8s ease-out;
+        }
+
+        /* HOLOGRAFISCHE ICONS (vereinheitlicht) */
+        .holo-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+            background: radial-gradient(
+                    circle at 30% 0,
+                    rgba(0, 255, 255, 0.6),
+                    transparent 55%
+                ),
+                rgba(4, 22, 36, 0.95);
+            border: 1px solid rgba(0, 255, 255, 0.65);
+            box-shadow: 0 0 26px rgba(0, 255, 255, 0.8);
+            color: #e7fbff;
+            font-size: 28px;
+            letter-spacing: 1px;
+            opacity: 0.25;
+            transform: scale(0.7) rotateX(35deg);
+            filter: drop-shadow(0 0 18px #00f2ff);
+            transition: all 0.7s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .holo-icon::before {
+            content: "";
+            position: absolute;
+            inset: -50%;
+            background: conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                rgba(0, 255, 255, 0.65) 90deg,
+                transparent 180deg,
+                rgba(0, 255, 255, 0.65) 270deg,
+                transparent 360deg
+            );
+            opacity: 0;
+            transition: opacity 0.7s ease-out;
+        }
+
+        .holo-icon span {
+            position: relative;
+        }
+
+        /* HEADLINES */
+        .station h1,
+        .station h2 {
+            font-weight: 600;
+            margin-bottom: 12px;
+            position: relative;
+            letter-spacing: 0.02em;
+        }
+
+        .station h1 {
+            font-size: clamp(2.2rem, 3vw, 2.8rem);
+        }
+
+        .station h2 {
+            font-size: clamp(1.8rem, 2.4vw, 2.2rem);
+        }
+
+        .headline-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.22em;
+            color: rgba(179, 230, 255, 0.9);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .headline-label::before {
+            content: "";
+            width: 28px;
+            height: 1px;
+            background: linear-gradient(
+                to right,
+                rgba(0, 255, 255, 0.4),
+                transparent
+            );
+        }
+
+        /* HOLO-LINE UNTER HEADLINES */
+        .station.active h1::after,
+        .station.active h2::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 55%;
+            bottom: -9px;
+            height: 2px;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                #00eaff,
+                transparent
+            );
+            animation: holoLine 3s infinite ease-in-out;
+        }
+
+        @keyframes holoLine {
+            0% {
+                transform: translateX(-26px);
+                opacity: 0.16;
+            }
+            50% {
+                transform: translateX(26px);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(-26px);
+                opacity: 0.16;
+            }
+        }
+
+        /* TEXT */
+        .station p {
+            font-size: 16px;
+            line-height: 1.65;
+            margin-bottom: 10px;
+            color: rgba(226, 247, 252, 0.96);
+        }
+
+        .station p strong {
+            color: #b6f3ff;
+            font-weight: 600;
+        }
+
+        .accent {
+            color: #5eeeff;
+            font-weight: 500;
+        }
+
+        /* TEXT-IN ANIMATION */
+        .station.active h1,
+        .station.active h2,
+        .station.active p,
+        .station.active .headline-label {
+            animation: textIn 0.9s ease-out forwards;
+        }
+
+        @keyframes textIn {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.97);
+                letter-spacing: 0.05em;
+                filter: blur(6px);
+            }
+            60% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: blur(0);
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* ACTIVE STATE */
+        .station.active {
+            opacity: 1;
+            transform: translateY(0);
+            filter: none;
+        }
+
+        .station.active .station-inner::before {
+            opacity: 0.4;
+        }
+
+        .station.active .station-inner::after {
+            opacity: 0.9;
+        }
+
+        .station.active .holo-icon {
+            opacity: 1;
+            transform: scale(1) rotateX(0deg);
+        }
+
+        .station.active .holo-icon::before {
+            opacity: 0.7;
+        }
+
+        /* OUT-STATE (vorige Section dimmt weich) */
+        .station.out {
+            opacity: 0.18;
+            transform: translateY(-6px) scale(0.99);
+            filter: blur(2px) brightness(0.8);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out,
+                filter 0.8s ease-out;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .stations {
+                padding-top: 96px;
+                padding-bottom: 96px;
+            }
+
+            .station {
+                padding: 56px 0;
+            }
+
+            .station-inner {
+                padding: 24px 20px 22px 20px;
+            }
+
+            .holo-icon {
+                width: 60px;
+                height: 60px;
+                border-radius: 18px;
+                font-size: 22px;
+            }
+
+            .spine {
+                display: none;
+            }
+
+            .scroll-down {
+                width: 52px;
+                height: 52px;
+                bottom: 22px;
+                right: 18px;
+            }
+
+            .station p {
+                font-size: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Hintergrund-Canvas -->
+    <canvas id="nebula"></canvas>
+    <canvas id="photons"></canvas>
+    <div class="glass-overlay"></div>
+
+    <!-- Vertikale Holo-Spine -->
+    <div class="spine"></div>
+
+    <!-- Scroll-Down-Button -->
+    <div class="scroll-down" aria-label="Nach unten scrollen">
+        <span>▼</span>
+    </div>
+
+    <!-- Inhaltliche Journey -->
+    <main class="stations">
+        <section class="station" id="s1">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>◎</span>
+                </div>
+                <div class="headline-label">Intro · Persönliche Journey</div>
+                <h1>Mein Schritt in eine zukunftssichere Karriere</h1>
+                <p>
+                    Diese Präsentation zeigt meinen Weg in die
+                    <span class="accent">Softwareentwicklung</span> – klar,
+                    strukturiert, modern und persönlich. Den Code habe ich selbst erstellt, um zu verdeutlichen, dass ich motiviert und engagiert bin. Ich würde mich freuen, wenn Sie es sich vollständig ansehen könnten.“
+                </p>
+                <p><strong>Flavio Werner präsentiert</strong></p>
+            </div>
+        </section>
+
+        <section class="station" id="s2">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>⚙</span>
+                </div>
+                <div class="headline-label">Ausgangssituation</div>
+                <h2>Wo ich aktuell stehe</h2>
+                <p>
+                    Ich befinde mich seit einem Jahr in beruflicher
+                    Neuorientierung. Durch Jobs in Gastronomie, Logistik, Verkauf
+                    und Service habe ich meine Stärken klar erkannt.
+                </p>
+                <p>
+                    <strong
+                        >Analytisches Denken, Struktur, Technikaffinität</strong
+                    >
+                    – und der Wunsch nach einer stabilen Perspektive.
+                </p>
+            </div>
+        </section>
+
+        <section class="station" id="s3">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>✦</span>
+                </div>
+                <div class="headline-label">Neuausrichtung</div>
+                <h2>Einstieg als Softwareentwickler</h2>
+                <p>
+                    <strong>Neustart mit Plan:</strong> Orientierung an Logik,
+                    Struktur und Problemlösung.
+                </p>
+                <p>
+                    <strong>Full-Stack-Zukunft:</strong> Einsatz im Frontend und
+                    Backend schafft Flexibilität.
+                </p>
+                <p>
+                    <strong>Starker Markt:</strong> IT-Fachkräftemangel sorgt
+                    für langfristige Perspektiven.
+                </p>
+            </div>
+        </section>
+
+        <section class="station" id="s4">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>➤</span>
+                </div>
+                <div class="headline-label">Motivation</div>
+                <h2>Warum Softwareentwicklung?</h2>
+                <p>
+                    Ich arbeite gern analytisch, strukturiert und
+                    lösungsorientiert – genau das ist Alltag in der Entwicklung.
+                </p>
+                <p>
+                    Erste Projekte und eigenständiges Lernen bestätigen, dass
+                    mich dieses Feld langfristig motiviert.
+                </p>
+                <p>
+                    Die Branche bietet Stabilität und Entwicklungsmöglichkeiten,
+                    die zu mir passen.
+                </p>
+            </div>
+        </section>
+
+        <section class="station" id="s5">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>✧</span>
+                </div>
+                <div class="headline-label">Konsequenz &amp; Durchhaltevermögen</div>
+                <h2>Warum dieser Weg der richtige ist</h2>
+                <p>
+                    <strong>FreeCodeCamp, eigene Tools und Webseiten:</strong>
+                    Seit über einem Jahr lerne ich täglich und bleibe
+                    drangeblieben.
+                </p>
+                <p>
+                    Die Entscheidung für diesen Weg ist <strong>bewusst</strong>
+                    und <strong>gut vorbereitet</strong>, nicht spontan.
+                </p>
+            </div>
+        </section>
+
+        <section class="station" id="s6">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>☉</span>
+                </div>
+                <div class="headline-label">Arbeitsmarkt</div>
+                <h2>Der Markt spricht eine klare Sprache</h2>
+                <p>
+                    In Deutschland bleiben zehntausende IT-Stellen unbesetzt.
+                    Gut qualifizierte Entwicklerinnen und Entwickler werden
+                    dringend gesucht.
+                </p>
+                <p>
+                    Mit einer <strong>Full-Stack-Weiterbildung</strong> habe ich
+                    eine reale Chance, in diesen Markt einzusteigen.
+                </p>
+            </div>
+        </section>
+
+        <section class="station" id="s7">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>⚡</span>
+                </div>
+                <div class="headline-label">Zielbild</div>
+                <h2>Erwartetes Ergebnis</h2>
+                <p>
+                    <strong>Vermittlungschancen:</strong> Gefragte Skills in
+                    einem Wachstumsfeld.
+                </p>
+                <p>
+                    <strong>Stabile Zukunft:</strong> Einstieg in ein
+                    Berufsfeld mit langfristiger Perspektive.
+                </p>
+                <p>
+                    <strong>Portfolio:</strong> Konkrete Projekte als Nachweis
+                    praktischer Fähigkeiten.
+                </p>
+            </div>
+        </section>
+
+        <section class="station" id="s8">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>⧉</span>
+                </div>
+                <div class="headline-label">Partner</div>
+                <h2>WBS Coding School</h2>
+                <p>
+                    AZAV-zertifizierte Weiterbildungseinrichtung mit moderner,
+                    praxisnaher Ausbildung.
+                </p>
+                <p>
+                    Mentoring, Teamarbeit, aktuelle Technologien und
+                    Unterstützung beim Einstieg in den Job.
+                </p>
+            </div>
+        </section>
+
+        <section class="station" id="s9">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>✪</span>
+                </div>
+                <div class="headline-label">Alternative Wege</div>
+                <h2>Warum keine reguläre Ausbildung?</h2>
+                <p>
+                    In vielen Unternehmen zählen
+                    <strong>praktische Fähigkeiten</strong> mehr als formale
+                    Ausbildungstitel.
+                </p>
+                <p>
+                    Eine dreijährige Ausbildung würde meinen Einstieg deutlich
+                    verzögern – das Bootcamp bringt mich
+                    <strong>schneller und gezielter</strong> ans Ziel.
+                </p>
+                <p>
+                    Es ist praxisnah, fokussiert und besser mit meiner aktuellen
+                    Lebenssituation vereinbar.
+                </p>
+            </div>
+        </section>
+
+        <section class="station" id="s10">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>⟡</span>
+                </div>
+                <div class="headline-label">Schlüsselressource</div>
+                <h2>Der Bildungsgutschein</h2>
+                <p>
+                    Der Bildungsgutschein ist der Schlüssel, um den Schritt in
+                    dieses Berufsfeld überhaupt gehen zu können.
+                </p>
+                <p>
+                    Er ermöglicht eine hochwertige Qualifizierung in einem
+                    Bereich, in dem Fachkräfte dringend benötigt werden.
+                </p>
+            </div>
+        </section>
+
+        <section class="station" id="s11">
+            <div class="station-inner">
+                <div class="holo-icon">
+                    <span>∞</span>
+                </div>
+                <div class="headline-label">Abschluss</div>
+                <h2>Vielen Dank</h2>
+                <p>
+                    Vielen Dank für Ihre Zeit und dafür, dass Sie meinen Weg
+                    nachvollziehen.
+                </p>
+                <p>
+                    Ich freue mich sehr über die Möglichkeit, mich
+                    weiterzuentwickeln und eine
+                    <strong>stabile berufliche Zukunft</strong> aufzubauen. Ich möchte Sie nicht mit zu viel Text überfallen, daher habe ich mich hier kurz gehalten. Falls Sie zusätzliche Informationen benötigen, sende ich Ihnen diese gerne zu.
+                </p>
+                <p><strong>Flavio Werner</strong></p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            gsap.registerPlugin(ScrollTrigger);
+
+            /* SECTION IN/OUT ANIMATION & STORYTELLING */
+            const sections = gsap.utils.toArray(".station");
+
+            sections.forEach((sec, index, arr) => {
+                ScrollTrigger.create({
+                    trigger: sec,
+                    start: "top center",
+                    end: "bottom center",
+                    onEnter: () => {
+                        sec.classList.add("active");
+                        sec.classList.remove("out");
+                        if (arr[index - 1]) arr[index - 1].classList.add("out");
+                    },
+                    onLeave: () => {
+                        sec.classList.add("out");
+                    },
+                    onEnterBack: () => {
+                        sec.classList.add("active");
+                        sec.classList.remove("out");
+                        if (arr[index + 1]) arr[index + 1].classList.add("out");
+                    },
+                    onLeaveBack: () => {
+                        sec.classList.add("out");
+                    }
+                });
+            });
+
+            /* Subtiles Parallax für Sections */
+            sections.forEach((sec, i) => {
+                gsap.to(sec, {
+                    y: () => i * -18,
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: sec,
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: true
+                    }
+                });
+            });
+
+            /* NEBULA BACKGROUND */
+            const nebula = document.getElementById("nebula");
+            const nctx = nebula.getContext("2d");
+
+            function resizeNebula() {
+                nebula.width = window.innerWidth;
+                nebula.height = window.innerHeight;
+            }
+            resizeNebula();
+            window.addEventListener("resize", resizeNebula);
+
+            function drawNebula() {
+                const w = nebula.width;
+                const h = nebula.height;
+
+                const g = nctx.createRadialGradient(
+                    w * 0.25,
+                    h * 0.2,
+                    40,
+                    w * 0.5,
+                    h * 0.6,
+                    h
+                );
+                g.addColorStop(0, "rgba(0,220,255,0.35)");
+                g.addColorStop(0.32, "rgba(0,90,160,0.32)");
+                g.addColorStop(0.7, "rgba(10,5,40,0.95)");
+                g.addColorStop(1, "rgba(0,0,0,1)");
+
+                nctx.fillStyle = g;
+                nctx.fillRect(0, 0, w, h);
+
+                requestAnimationFrame(drawNebula);
+            }
+            drawNebula();
+
+            /* PARTICLE PHOTONS */
+            const photons = document.getElementById("photons");
+            const pctx = photons.getContext("2d");
+
+            function resizePhotons() {
+                photons.width = window.innerWidth;
+                photons.height = window.innerHeight;
+            }
+            resizePhotons();
+            window.addEventListener("resize", resizePhotons);
+
+            let particles = [];
+            const PARTICLE_COUNT =
+                window.innerWidth < 768 ? 60 : 110; // etwas dynamisch
+
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push({
+                    x: Math.random() * window.innerWidth,
+                    y: Math.random() * window.innerHeight,
+                    s: Math.random() * 2 + 1,
+                    v: Math.random() * 0.35 + 0.18,
+                    glow: Math.random() * 0.4 + 0.25
+                });
+            }
+
+            function drawParticles() {
+                pctx.clearRect(0, 0, photons.width, photons.height);
+
+                particles.forEach((p) => {
+                    const gradient = pctx.createRadialGradient(
+                        p.x,
+                        p.y,
+                        0,
+                        p.x,
+                        p.y,
+                        p.s * 4
+                    );
+                    gradient.addColorStop(
+                        0,
+                        `rgba(0,255,255,${0.5 * p.glow})`
+                    );
+                    gradient.addColorStop(1, "rgba(0,255,255,0)");
+
+                    pctx.fillStyle = gradient;
+                    pctx.beginPath();
+                    pctx.arc(p.x, p.y, p.s * 2, 0, Math.PI * 2);
+                    pctx.fill();
+
+                    p.y -= p.v;
+                    if (p.y < -10) {
+                        p.y = photons.height + 10;
+                        p.x = Math.random() * photons.width;
+                    }
+                });
+
+                requestAnimationFrame(drawParticles);
+            }
+            drawParticles();
+
+            /* Scroll-Down Button – ein Screen weiter */
+            document
+                .querySelector(".scroll-down")
+                .addEventListener("click", () => {
+                    window.scrollBy({
+                        top: window.innerHeight * 0.9,
+                        behavior: "smooth"
+                    });
+                });
+        });
+    </script>
+</body>
+</html>
